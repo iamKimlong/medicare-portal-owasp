@@ -1,8 +1,12 @@
+
 # Testing Guide
 
 Step-by-step instructions for testing every OWASP vulnerability in the portal. Each section tells you exactly what to do, what you should see when it works, and what changes when you flip `SECURE_MODE = true`.
 
 All tests assume you're running on Arch Linux with Apache + MariaDB as described in `README.md`, and that you're starting with `SECURE_MODE = false` in `config.php`.
+
+> [!tip]
+> You don't need to restart `httpd` after changing configuration or code
 
 ---
 
