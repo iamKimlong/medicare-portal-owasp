@@ -1,0 +1,6 @@
+/vendor/
+/uploads/*
+!/uploads/.htaccess
+!/uploads/.gitkeep
+*.log
+.DS_Store

@@ -1,0 +1,6 @@
+# In VULNERABLE mode: PHP execution is allowed in uploads/
+# In SECURE mode: uncomment the lines below to block PHP execution
+
+# <FilesMatch "\.php$">
+#     Require all denied
+# </FilesMatch>

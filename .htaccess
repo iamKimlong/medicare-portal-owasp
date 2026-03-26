@@ -1,0 +1,16 @@
+# A05 - Security Misconfiguration
+# In VULNERABLE mode these are left exposed
+# In SECURE mode these would be set in php.ini / Apache config
+
+Options -Indexes
+DirectoryIndex index.php
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+</IfModule>
+
+# Block access to sensitive files
+# NOTE: Uncomment these for SECURE_MODE equivalent at server level
+# <FilesMatch "\.(sql|md|log)$">
+#     Require all denied
+# </FilesMatch>

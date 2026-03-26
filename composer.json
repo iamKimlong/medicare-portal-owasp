@@ -1,0 +1,13 @@
+{
+    "name": "secure-programming/medicare-portal",
+    "description": "Intentionally vulnerable healthcare portal for OWASP Top 10 demonstration",
+    "type": "project",
+    "require": {
+        "phpmailer/phpmailer": "5.2.23"
+    },
+    "config": {
+        "platform": {
+            "php": "8.1"
+        }
+    }
+}
