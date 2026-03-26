@@ -473,24 +473,24 @@ mariadb -u root -p < /path/to/medicare-portal/db/schema.sql
 # Troubleshooting
 
 **"Connection refused" or blank page:**
-- Check Apache is running: `sudo systemctl status httpd`
-- Check PHP errors: `sudo journalctl -u httpd -f`
-- Verify `pdo_mysql` extension is enabled in `/etc/php/php.ini`
+    - Check Apache is running: `sudo systemctl status httpd`
+    - Check PHP errors: `sudo journalctl -u httpd -f`
+    - Verify `pdo_mysql` extension is enabled in `/etc/php/php.ini`
 
 **"Access denied" from MySQL:**
-- Verify credentials in `config.php` match what you set during `mariadb-secure-installation`
-- Test manually: `mariadb -u root -p medicare -e "SELECT 1"`
+    - Verify credentials in `config.php` match what you set during `mariadb-secure-installation`
+    - Test manually: `mariadb -u root -p medicare -e "SELECT 1"`
 
 **Uploads don't execute (A08 test fails):**
-- You must use Apache, not `php -S`. The built-in PHP server doesn't execute uploaded `.php` files from the uploads directory.
-- Check that `uploads/.htaccess` is not blocking PHP execution (in vulnerable mode, it shouldn't be).
+    - You must use Apache, not `php -S`. The built-in PHP server doesn't execute uploaded `.php` files from the uploads directory.
+    - Check that `uploads/.htaccess` is not blocking PHP execution (in vulnerable mode, it shouldn't be).
 
 **Session fixation test (A07) not working:**
-- Use two separate browser profiles or one regular + one incognito window. Tabs in the same browser share the same cookie jar.
+    - Use two separate browser profiles or one regular + one incognito window. Tabs in the same browser share the same cookie jar.
 
 **XSS payload doesn't fire:**
-- Use Firefox. Some Chromium builds have built-in XSS auditors that silently block script execution.
-- Verify `SECURE_MODE = false` in `config.php`.
-- If `<script>alert('XSS')</script>` doesn't work, use `<img src=x onerror="alert(document.cookie)">` instead - it bypasses more browser protections.
+    - Use Firefox. Some Chromium builds have built-in XSS auditors that silently block script execution.
+    - Verify `SECURE_MODE = false` in `config.php`.
+    - If `<script>alert('XSS')</script>` doesn't work, use `<img src=x onerror="alert(document.cookie)">` instead - it bypasses more browser protections.
 
 ---
