@@ -72,7 +72,7 @@ INSERT INTO users (name, email, password, role) VALUES
 ('Admin User', 'admin@demo.com', '0192023a7bbd73250516f069df18b500', 'admin');
 
 INSERT INTO patients (user_id, dob, blood_type, allergies, notes) VALUES
-(1, '1990-03-15', 'A+', 'Penicillin', 'Regular checkup patient. History of seasonal allergies.'),
+(1, '1990-03-15', 'A+', 'Peanuts', 'Regular checkup patient. History of seasonal allergies.'),
 (2, '1985-07-22', 'O-', 'None', 'Pre-diabetic. Monitor blood sugar quarterly.');
 
 INSERT INTO appointments (patient_id, doctor_id, datetime, status, notes) VALUES
