@@ -7,7 +7,10 @@ Built for a Secure Programming final project. Every vulnerability has a hardened
 
 ---
 
-# Setup (Arch Linux)
+# Setup
+
+> [!note]
+> These commands are specific to Arch Linux only, adjust the commands to your OS/Distribution accordingly
 
 ## 1. Install dependencies
 
