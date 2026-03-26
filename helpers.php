@@ -68,6 +68,7 @@ function getSidebarItems(string $role): array {
     $shared = [
         ['url' => '/shared/search.php', 'label' => 'Find a Doctor'],
         ['url' => '/shared/upload.php', 'label' => 'Upload File'],
+        ['url' => '/shared/insurance_fetch.php', 'label' => 'Insurance Verification'],
     ];
 
     $roleMenus = [
