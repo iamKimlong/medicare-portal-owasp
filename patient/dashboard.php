@@ -32,7 +32,7 @@ renderHeader('Patient Dashboard');
         <?php endif; ?>
         <?php foreach ($appointments as $appt): ?>
             <div class="list-item">
-                <span class="list-item-date"><?= esc($appt['datetime']) ?></span>
+                <span class="list-item-date"><?= fmtDate($appt['datetime']) ?></span>
                 <span class="status-badge status-<?= esc($appt['status']) ?>">
                     <?= esc(ucfirst($appt['status'])) ?>
                 </span>
@@ -49,7 +49,7 @@ renderHeader('Patient Dashboard');
         <?php foreach ($recentMessages as $msg): ?>
             <div class="list-item">
                 <strong><?= esc($msg['sender_name']) ?></strong>
-                <span class="text-muted"><?= esc($msg['sent_at']) ?></span>
+                <span class="text-muted"><?= fmtDate($msg['sent_at']) ?></span>
                 <p><?= esc($msg['body']) ?></p>
             </div>
         <?php endforeach; ?>

@@ -62,6 +62,10 @@ function esc(string $value): string {
     return htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
 }
 
+function fmtDate(string $datetime): string {
+    return date('d-m-Y H:i', strtotime($datetime));
+}
+
 function writeAuditLog(string $action): void {
     if (!SECURE_MODE) {
         return;

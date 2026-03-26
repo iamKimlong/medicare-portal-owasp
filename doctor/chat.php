@@ -20,8 +20,9 @@ function sendDoctorMessage(PDO $conn, int $senderId): void {
     }
 
     if (!SECURE_MODE) {
+        $escaped = $conn->quote($body);
         $conn->query(
-            "INSERT INTO messages (sender_id, receiver_id, body) VALUES ($senderId, $receiverId, '$body')"
+            "INSERT INTO messages (sender_id, receiver_id, body) VALUES ($senderId, $receiverId, $escaped)"
         );
         return;
     }

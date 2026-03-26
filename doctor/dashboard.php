@@ -53,7 +53,7 @@ renderHeader('Doctor Dashboard');
         <?php foreach ($upcoming as $appt): ?>
             <div class="list-item">
                 <strong><?= esc($appt['patient_name']) ?></strong>
-                <span class="list-item-date"><?= esc($appt['datetime']) ?></span>
+                <span class="list-item-date"><?= fmtDate($appt['datetime']) ?></span>
                 <p class="list-item-note"><?= esc($appt['notes'] ?? '') ?></p>
             </div>
         <?php endforeach; ?>
@@ -67,7 +67,7 @@ renderHeader('Doctor Dashboard');
         <?php foreach ($recentMessages as $msg): ?>
             <div class="list-item">
                 <strong><?= esc($msg['sender_name']) ?></strong>
-                <span class="text-muted"><?= esc($msg['sent_at']) ?></span>
+                <span class="text-muted"><?= fmtDate($msg['sent_at']) ?></span>
                 <p><?= esc($msg['body']) ?></p>
             </div>
         <?php endforeach; ?>

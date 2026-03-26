@@ -20,8 +20,9 @@ function sendMessage(PDO $conn, int $senderId): void {
     }
 
     if (!SECURE_MODE) {
+        $escaped = $conn->quote($body);
         $conn->query(
-            "INSERT INTO messages (sender_id, receiver_id, body) VALUES ($senderId, $receiverId, '$body')"
+            "INSERT INTO messages (sender_id, receiver_id, body) VALUES ($senderId, $receiverId, $escaped)"
         );
         return;
     }
@@ -80,7 +81,7 @@ renderHeader('Messages');
                     <?php else: ?>
                         <p><?= esc($msg['body']) ?></p>
                     <?php endif; ?>
-                    <span class="chat-time"><?= esc($msg['sent_at']) ?></span>
+                    <span class="chat-time"><?= fmtDate($msg['sent_at']) ?></span>
                 </div>
             <?php endforeach; ?>
         </div>
@@ -95,9 +96,11 @@ renderHeader('Messages');
     </div>
 </div>
 
+<div style="margin-top: 3rem;"></div>
+
 <div class="card vuln-hint">
     <h3 class="card-title">A03 — XSS in Chat</h3>
-    <p>Try sending <code>&lt;script&gt;alert('XSS')&lt;/script&gt;</code> as a message.</p>
+    <p>Try sending <code>&lt;img src=x onerror="alert(document.cookie)"&gt;</code> as a message.</p>
     <p>Current mode: <strong><?= SECURE_MODE ? 'SECURE' : 'VULNERABLE' ?></strong></p>
 </div>
 

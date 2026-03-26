@@ -54,7 +54,7 @@ renderHeader('Admin Dashboard');
                     <td><?= esc($u['name']) ?></td>
                     <td><?= esc($u['email']) ?></td>
                     <td><span class="role-badge role-<?= esc($u['role']) ?>"><?= esc(ucfirst($u['role'])) ?></span></td>
-                    <td><?= esc($u['created_at']) ?></td>
+                    <td><?= fmtDate($u['created_at']) ?></td>
                 </tr>
             <?php endforeach; ?>
         </tbody>

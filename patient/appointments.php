@@ -14,12 +14,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 function handleBooking(PDO $conn, int $userId): string {
     $doctorId = (int)($_POST['doctor_id'] ?? 0);
-    $datetime = $_POST['datetime'] ?? '';
+    $date = $_POST['date'] ?? '';
+    $time = $_POST['time'] ?? '';
     $notes = $_POST['notes'] ?? '';
 
-    if ($doctorId === 0 || $datetime === '') {
-        return 'Doctor and date/time are required.';
+    if ($doctorId === 0 || $date === '' || $time === '') {
+        return 'Doctor, date, and time are required.';
     }
+
+    $datetime = $date . ' ' . $time . ':00';
 
     if (!SECURE_MODE) {
         return bookVulnerable($conn, $userId, $doctorId, $datetime, $notes);
@@ -57,11 +60,19 @@ function bookSecure(PDO $conn, int $userId, int $doctorId, string $datetime, str
     return 'Appointment booked successfully.';
 }
 
-$stmt = $conn->prepare("SELECT * FROM appointments WHERE patient_id = ? ORDER BY datetime DESC");
+$stmt = $conn->prepare("SELECT a.*, u.name AS doctor_name FROM appointments a JOIN users u ON a.doctor_id = u.id WHERE a.patient_id = ? ORDER BY a.datetime DESC");
 $stmt->execute([$userId]);
 $appointments = $stmt->fetchAll();
 
 $doctors = $conn->query("SELECT id, name FROM users WHERE role = 'doctor'")->fetchAll();
+
+$timeSlots = [];
+for ($h = 8; $h <= 17; $h++) {
+    $timeSlots[] = sprintf('%02d:00', $h);
+    if ($h < 17) {
+        $timeSlots[] = sprintf('%02d:30', $h);
+    }
+}
 
 renderHeader('Appointments');
 ?>
@@ -86,8 +97,18 @@ renderHeader('Appointments');
                 </select>
             </div>
             <div class="form-group">
-                <label for="datetime">Date & Time</label>
-                <input type="datetime-local" name="datetime" id="datetime" required>
+                <label for="date">Date</label>
+                <input type="date" name="date" id="date" required
+                       min="<?= date('Y-m-d') ?>">
+            </div>
+            <div class="form-group">
+                <label for="time">Time</label>
+                <select name="time" id="time" required>
+                    <option value="">Select a time</option>
+                    <?php foreach ($timeSlots as $slot): ?>
+                        <option value="<?= $slot ?>"><?= $slot ?></option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             <div class="form-group">
                 <label for="notes">Notes</label>
@@ -104,7 +125,8 @@ renderHeader('Appointments');
         <?php endif; ?>
         <?php foreach ($appointments as $appt): ?>
             <div class="list-item">
-                <span class="list-item-date"><?= esc($appt['datetime']) ?></span>
+                <strong><?= esc($appt['doctor_name']) ?></strong>
+                <span class="list-item-date"><?= fmtDate($appt['datetime']) ?></span>
                 <span class="status-badge status-<?= esc($appt['status']) ?>"><?= esc(ucfirst($appt['status'])) ?></span>
                 <p class="list-item-note"><?= esc($appt['notes'] ?? '') ?></p>
             </div>

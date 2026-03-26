@@ -102,7 +102,7 @@ renderHeader('Upload File');
         <?php foreach ($uploads as $upload): ?>
             <div class="list-item">
                 <a href="/<?= esc($upload['filepath']) ?>"><?= esc($upload['filename']) ?></a>
-                <span class="text-muted"><?= esc($upload['uploaded_at']) ?></span>
+                <span class="text-muted"><?= fmtDate($upload['uploaded_at']) ?></span>
             </div>
         <?php endforeach; ?>
     </div>

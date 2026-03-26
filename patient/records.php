@@ -10,12 +10,18 @@ $record = SECURE_MODE ? fetchRecordSecure($conn) : fetchRecordVulnerable($conn);
 
 function fetchRecordVulnerable(PDO $conn): ?array {
     $id = $_GET['patient_id'] ?? $_SESSION['user_id'];
+    if ($id === '') {
+        $id = $_SESSION['user_id'];
+    }
     $result = $conn->query("SELECT p.*, u.name, u.email FROM patients p JOIN users u ON p.user_id = u.id WHERE p.user_id = $id");
     return $result->fetch() ?: null;
 }
 
 function fetchRecordSecure(PDO $conn): ?array {
     $id = $_GET['patient_id'] ?? $_SESSION['user_id'];
+    if ($id === '') {
+        $id = $_SESSION['user_id'];
+    }
     if ((int)$id !== currentUserId() && currentRole() !== 'doctor' && currentRole() !== 'admin') {
         http_response_code(403);
         die('Access denied.');

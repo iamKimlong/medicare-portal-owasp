@@ -45,7 +45,7 @@ renderHeader('Audit Log');
                         <td><?= esc($log['user_name'] ?? 'Unknown') ?></td>
                         <td><?= esc($log['action']) ?></td>
                         <td><?= esc($log['ip'] ?? '') ?></td>
-                        <td><?= esc($log['timestamp']) ?></td>
+                        <td><?= fmtDate($u['created_at']) ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
