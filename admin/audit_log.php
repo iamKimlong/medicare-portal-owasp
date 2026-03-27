@@ -54,7 +54,7 @@ renderHeader('Audit Log');
 </div>
 
 <div class="card vuln-hint">
-    <h3 class="card-title">A09 — Logging & Monitoring Failures</h3>
+    <h3 class="card-title">A09 - Logging & Monitoring Failures</h3>
     <p>In VULNERABLE mode, sensitive actions like logins, record access, and uploads are <strong>not logged</strong>.</p>
     <p>Current mode: <strong><?= SECURE_MODE ? 'SECURE' : 'VULNERABLE' ?></strong></p>
 </div>

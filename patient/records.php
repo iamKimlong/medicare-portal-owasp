@@ -53,7 +53,7 @@ renderHeader('Patient Records');
 </div>
 
 <div class="card vuln-hint">
-    <h3 class="card-title">A01 — Broken Access Control</h3>
+    <h3 class="card-title">A01 - Broken Access Control</h3>
     <p>Try changing <code>?patient_id=2</code> in the URL to access another patient's records.</p>
     <p>Current mode: <strong><?= SECURE_MODE ? 'SECURE' : 'VULNERABLE' ?></strong></p>
 </div>

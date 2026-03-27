@@ -87,7 +87,7 @@ renderHeader('Insurance Verification');
 <?php endif; ?>
 
 <div class="card vuln-hint">
-    <h3 class="card-title">A10 — SSRF</h3>
+    <h3 class="card-title">A10 - SSRF</h3>
     <p>Try fetching <code>http://localhost/db/schema.sql</code> or <code>file:///etc/passwd</code>.</p>
     <p>Current mode: <strong><?= SECURE_MODE ? 'SECURE' : 'VULNERABLE' ?></strong></p>
 </div>

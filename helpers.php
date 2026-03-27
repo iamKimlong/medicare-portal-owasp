@@ -10,7 +10,7 @@ function renderHeader(string $title = 'MediCare Portal'): void {
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title><?= esc($title) ?> — MediCare</title>
+        <title><?= esc($title) ?> - MediCare</title>
         <link rel="stylesheet" href="/assets/style.css">
     </head>
     <body>

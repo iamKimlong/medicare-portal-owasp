@@ -109,7 +109,7 @@ renderHeader('Upload File');
 </div>
 
 <div class="card vuln-hint">
-    <h3 class="card-title">A08 — File Upload / Webshell</h3>
+    <h3 class="card-title">A08 - File Upload / Webshell</h3>
     <p>Try uploading a <code>.php</code> file and navigating to <code>/uploads/yourfile.php</code>.</p>
     <p>Current mode: <strong><?= SECURE_MODE ? 'SECURE' : 'VULNERABLE' ?></strong></p>
 </div>

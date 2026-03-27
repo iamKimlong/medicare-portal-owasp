@@ -69,7 +69,7 @@ function loginSecure(PDO $conn, string $email, string $password): string {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login — MediCare Portal</title>
+    <title>Login - MediCare Portal</title>
     <link rel="stylesheet" href="/assets/style.css">
 </head>
 <body class="auth-page">

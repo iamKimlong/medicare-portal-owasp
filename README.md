@@ -124,7 +124,7 @@ define('DB_PASS', 'your_password_here');  // whatever you set in step 2
 sudo systemctl restart httpd
 ```
 
-Open `http://localhost` — you should see the login page.
+Open `http://localhost` - you should see the login page.
 
 ## Alternative: PHP built-in server (no Apache)
 
@@ -182,20 +182,20 @@ Each feature file contains two functions - one vulnerable, one secure - and disp
 > [!note]
 > This project was built against the **OWASP Top 10 (2021)** classification. OWASP released an
 > updated **2025 edition** in November 2025 that reshuffles the ranking and introduces two new
-> categories. The vulnerabilities demonstrated here remain the same — only the numbering changed:
+> categories. The vulnerabilities demonstrated here remain the same - only the numbering changed:
 >
 > | This Project (2021)                   | OWASP 2025 Equivalent                                    |
 > |---------------------------------------|----------------------------------------------------------|
-> | A01 — Broken Access Control           | A01:2025 — Broken Access Control (unchanged)             |
-> | A02 — Cryptographic Failures          | A04:2025 — Cryptographic Failures (moved to `#4`)        |
-> | A03 — Injection (SQLi, XSS)           | A05:2025 — Injection (moved to `#5`)                     |
-> | A04 — Insecure Design                 | A06:2025 — Insecure Design (moved to `#6`)               |
-> | A05 — Security Misconfiguration       | A02:2025 — Security Misconfiguration (moved to `#2`)     |
-> | A06 — Vulnerable Components           | A03:2025 — Software Supply Chain Failures (expanded)     |
-> | A07 — Auth & Session Failures         | A07:2025 — Authentication Failures (unchanged)           |
-> | A08 — Software & Data Integrity       | A08:2025 — Software & Data Integrity Failures (unchanged)|
-> | A09 — Logging & Monitoring Failures   | A09:2025 — Security Logging & Alerting Failures (renamed)|
-> | A10 — SSRF                            | Merged into A01:2025 — Broken Access Control             |
+> | A01 - Broken Access Control           | A01:2025 - Broken Access Control (unchanged)             |
+> | A02 - Cryptographic Failures          | A04:2025 - Cryptographic Failures (moved to `#4`)        |
+> | A03 - Injection (SQLi, XSS)           | A05:2025 - Injection (moved to `#5`)                     |
+> | A04 - Insecure Design                 | A06:2025 - Insecure Design (moved to `#6`)               |
+> | A05 - Security Misconfiguration       | A02:2025 - Security Misconfiguration (moved to `#2`)     |
+> | A06 - Vulnerable Components           | A03:2025 - Software Supply Chain Failures (expanded)     |
+> | A07 - Auth & Session Failures         | A07:2025 - Authentication Failures (unchanged)           |
+> | A08 - Software & Data Integrity       | A08:2025 - Software & Data Integrity Failures (unchanged)|
+> | A09 - Logging & Monitoring Failures   | A09:2025 - Security Logging & Alerting Failures (renamed)|
+> | A10 - SSRF                            | Merged into A01:2025 - Broken Access Control             |
 
 ---
 
