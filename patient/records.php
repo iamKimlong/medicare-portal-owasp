@@ -44,7 +44,7 @@ renderHeader('Patient Records');
         <table class="data-table">
             <tr><th>Name</th><td><?= esc($record['name']) ?></td></tr>
             <tr><th>Email</th><td><?= esc($record['email']) ?></td></tr>
-            <tr><th>Date of Birth</th><td><?= esc($record['dob'] ?? 'N/A') ?></td></tr>
+            <tr><th>Date of Birth</th><td><?= ($record['dob'] ?? '') !== '' ? date('d-m-Y', strtotime($record['dob'])) : 'N/A' ?></td></tr>
             <tr><th>Blood Type</th><td><?= esc($record['blood_type'] ?? 'N/A') ?></td></tr>
             <tr><th>Allergies</th><td><?= esc($record['allergies'] ?? 'None') ?></td></tr>
             <tr><th>Notes</th><td><?= esc($record['notes'] ?? '') ?></td></tr>
