@@ -1,14 +1,13 @@
 # Undo Guide
 
-Reverses everything from the setup in `README.md`. Run these steps in order.
+Reverses everything from the manual setup in `README.md`. Run these steps in order.
 
 ---
 
 ## 1. Stop services
 
 ```bash
-sudo systemctl stop httpd
-sudo systemctl stop mariadb
+sudo systemctl stop httpd mariadb
 ```
 
 ## 2. Drop the database
@@ -67,13 +66,13 @@ sudo systemctl daemon-reload
 sudo pacman -Rns php apache mariadb php-apache
 ```
 
-This removes the packages, their dependencies that aren't needed by anything else, and their config files.
+> [!note]
+> This removes the packages, their dependencies that aren't needed by anything else, and their config files.
 
 ## 7. Clean leftover data
 
 ```bash
-sudo rm -rf /var/lib/mysql
-sudo rm -rf /var/log/httpd
+sudo rm -rf /var/lib/mysql /var/log/httpd
 ```
 
 ## 8. Delete the project
