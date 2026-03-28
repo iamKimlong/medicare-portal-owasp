@@ -50,7 +50,7 @@ function loginSecure(PDO $conn, string $email, string $password): string {
     $stmt->execute([$email]);
     $user = $stmt->fetch();
 
-    if (!$user || !password_verify($password, $user['password'])) {
+    if (!$user || !verifyPassword($password, $user['password'])) {
         return 'Invalid credentials.';
     }
 

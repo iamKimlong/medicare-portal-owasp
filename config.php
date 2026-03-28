@@ -1,5 +1,7 @@
 <?php
 define('SECURE_MODE', false);
+define('SHOW_SECURE_TOGGLE', true);
+define('SHOW_VULN_HINT', true);
 
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
@@ -92,4 +94,69 @@ function renderError(string $message): void {
         return;
     }
     echo '<div class="alert alert-error">' . $message . '</div>';
+}
+
+function isLegacyMd5Hash(string $hash): bool {
+    return (bool) preg_match('/^[a-f0-9]{32}$/', $hash);
+}
+
+function verifyPassword(string $password, string $storedHash): bool {
+    if (isLegacyMd5Hash($storedHash)) {
+        return md5($password) === $storedHash;
+    }
+    return password_verify($password, $storedHash);
+}
+
+function toggleSecureMode(): void {
+    $configPath = __DIR__ . '/config.php';
+    $contents = file_get_contents($configPath);
+    if ($contents === false) {
+        return;
+    }
+
+    if (!preg_match("/define\('SECURE_MODE',\s*(true|false)\)/", $contents, $matches)) {
+        return;
+    }
+
+    $current = $matches[1];
+    $new = ($current === 'true') ? 'false' : 'true';
+    $updated = preg_replace(
+        "/define\('SECURE_MODE',\s*(true|false)\)/",
+        "define('SECURE_MODE', " . $new . ")",
+        $contents,
+        1
+    );
+
+    file_put_contents($configPath, $updated);
+
+    if (function_exists('opcache_invalidate')) {
+        opcache_invalidate($configPath, true);
+    }
+}
+
+function toggleVulnHint(): void {
+    $configPath = __DIR__ . '/config.php';
+    $contents = file_get_contents($configPath);
+    if ($contents === false) {
+        return;
+    }
+
+    if (!preg_match("/define\('SHOW_VULN_HINT',\s*(true|false)\)/", $contents, $matches)) {
+        return;
+    }
+
+    $current = $matches[1];
+    $new = ($current === 'true') ? 'false' : 'true';
+    $updated = preg_replace(
+        "/define\('SHOW_VULN_HINT',\s*(true|false)\)/",
+        "define('SHOW_VULN_HINT', " . $new . ")",
+        $contents,
+        1
+    );
+
+    file_put_contents($configPath, $updated);
+
+    if (function_exists('opcache_invalidate')) {
+        opcache_invalidate($configPath, true);
+    }
 }

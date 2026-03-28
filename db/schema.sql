@@ -69,11 +69,15 @@ INSERT INTO users (name, email, password, role) VALUES
 ('Alice Johnson', 'alice@demo.com', '482c811da5d5b4bc6d497ffa98491e38', 'patient'),
 ('Bob Williams', 'bob@demo.com', '482c811da5d5b4bc6d497ffa98491e38', 'patient'),
 ('Dr. Sarah Smith', 'drsmith@demo.com', '482c811da5d5b4bc6d497ffa98491e38', 'doctor'),
-('Admin User', 'admin@demo.com', '0192023a7bbd73250516f069df18b500', 'admin');
+('Admin User', 'admin@demo.com', '0192023a7bbd73250516f069df18b500', 'admin'),
+('Carol Davis', 'carol@demo.com', '$2y$12$b2xw0OaGEDNX3BSf2gPsrOlg/KyI.f1m7F9SpazIUQi9UxoFQRPDy', 'patient'),
+('Dr. James Lee', 'drlee@demo.com', '$2y$12$b2xw0OaGEDNX3BSf2gPsrOlg/KyI.f1m7F9SpazIUQi9UxoFQRPDy', 'doctor'),
+('Admin Secure', 'secadmin@demo.com', '$2y$12$mKfL85ne9aYxrIFvMIAly.GQwSg/33EMjyeMrzDK9pL9jtGKYJyeO', 'admin');
 
 INSERT INTO patients (user_id, dob, blood_type, allergies, notes) VALUES
 (1, '1990-03-15', 'A+', 'Peanuts', 'Regular checkup patient. History of seasonal allergies.'),
-(2, '1985-07-22', 'O-', 'None', 'Pre-diabetic. Monitor blood sugar quarterly.');
+(2, '1985-07-22', 'O-', 'None', 'Pre-diabetic. Monitor blood sugar quarterly.'),
+(5, '1992-11-04', 'B+', 'Sulfa drugs', 'Bcrypt-hashed account for secure mode testing.');
 
 INSERT INTO appointments (patient_id, doctor_id, datetime, status, notes) VALUES
 (1, 3, '2026-04-01 09:00:00', 'scheduled', 'Annual physical exam'),
