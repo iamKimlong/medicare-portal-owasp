@@ -23,5 +23,5 @@ EOSQL
 mysql -u root -pmedicare_demo medicare < /var/www/html/db/schema.sql
 
 echo "MariaDB ready. Starting Apache..."
-sed -i "s/define('DB_HOST', 'localhost')/define('DB_HOST', '127.0.0.1')/" /var/www/html/config.php
+ln -s /var/run/mysqld/mysqld.sock /tmp/mysql.sock
 exec apache2-foreground
