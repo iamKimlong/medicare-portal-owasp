@@ -10,6 +10,7 @@ Every vulnerability has a hardened counterpart controlled by a single boolean in
 
 ---
 
+<a name="setup"></a>
 ## ⚡ Setup
 
 Pick one:
@@ -196,6 +197,7 @@ See [docs/undo.md](docs/undo.md) for full reversal steps.
 
 ---
 
+<a name="test-accounts"></a>
 ## Test Accounts
 
 Seed accounts with **MD5 hashes** (for A02 vulnerability demo):
@@ -217,6 +219,7 @@ MD5 accounts work in both modes. Bcrypt accounts only work in secure mode.
 
 ---
 
+<a name="how-secure_mode-works"></a>
 ## ⚙️ How SECURE_MODE Works
 
 Every vulnerable code path checks a single constant in `config.php`:
@@ -245,6 +248,7 @@ Set `SHOW_SECURE_TOGGLE` and `SHOW_VULN_HINT` to `false` for a clean demo withou
 
 ---
 
+<a name="owasp-top-10-coverage"></a>
 ## 🚀 OWASP Top 10 Coverage
 
 | #   | Category                        | File                         | Vulnerable Behavior                     | Secure Fix                                   |
@@ -281,6 +285,7 @@ Set `SHOW_SECURE_TOGGLE` and `SHOW_VULN_HINT` to `false` for a clean demo withou
 
 ---
 
+<a name="project-structure"></a>
 ## Project Structure
 
 ```
