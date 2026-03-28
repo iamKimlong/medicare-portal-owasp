@@ -1,4 +1,3 @@
-
 # MediCare Portal
 
 **Intentionally vulnerable healthcare patient portal for demonstrating the OWASP Top 10 (2021).**
@@ -9,8 +8,58 @@ Built for a Secure Programming final project. Every vulnerability has a hardened
 
 # Setup
 
+Pick one:
+
+<details>
+<summary><strong>Option A: Docker (recommended)</strong></summary>
+
+## Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/) installed and running
+
+## 1. Build and run
+
+```bash
+cd medicare-portal
+docker build -t medicare-portal .
+docker run -d -p 80:80 --name medicare medicare-portal
+```
+
+## 2. Open the app
+
+Go to `http://localhost` - you should see the login page.
+
+## 3. Stop / restart
+
+```bash
+docker stop medicare
+docker start medicare
+```
+
+## 4. Reset the database
+
+```bash
+docker exec medicare mysql -u root medicare < /var/www/html/db/schema.sql
+```
+
+## 5. Tear down
+
+```bash
+docker rm -f medicare
+docker rmi medicare-portal
+```
+
 > [!note]
-> These commands are specific to Arch Linux only, adjust the commands to your OS/Distribution accordingly
+> The Docker image bundles Apache, PHP, and MariaDB in a single container for simplicity.
+> This is fine for a demo - don't do this in production.
+
+</details>
+
+<details>
+<summary><strong>Option B: Manual setup (Arch Linux + Apache + MariaDB)</strong></summary>
+
+> [!note]
+> These commands are specific to Arch Linux. Adjust package names and service commands for your distribution.
 
 ## 1. Install dependencies
 
@@ -32,7 +81,7 @@ Set a root password when prompted. Then import the schema:
 mariadb -u root -p < db/schema.sql
 ```
 
-This creates the `medicare` database, all tables, and seeds four test accounts.
+This creates the `medicare` database, all tables, and seeds the test accounts.
 
 > [!note]
 > If you get `ERROR 1698 (28000): Access denied for user 'root'@'localhost'`,
@@ -136,11 +185,17 @@ php -S localhost:8080
 
 This works for most features but `.htaccess` rules won't apply, and the webshell upload demo (A08) won't auto-execute PHP files in `/uploads/`.
 
+## Teardown
+
+See [docs/undo.md](docs/undo.md) for full reversal steps.
+
+</details>
+
 ---
 
 # Test Accounts
 
-All seed passwords are stored as MD5 in vulnerable mode. These are the plaintext values:
+Seed accounts with **MD5 hashes** (for A02 vulnerability demo):
 
 | Role    | Email             | Password    |
 |---------|-------------------|-------------|
@@ -148,6 +203,16 @@ All seed passwords are stored as MD5 in vulnerable mode. These are the plaintext
 | Patient | bob@demo.com      | password123 |
 | Doctor  | drsmith@demo.com  | password123 |
 | Admin   | admin@demo.com    | admin123    |
+
+Seed accounts with **bcrypt hashes** (for secure mode login):
+
+| Role    | Email             | Password    |
+|---------|-------------------|-------------|
+| Patient | carol@demo.com    | password123 |
+| Doctor  | drlee@demo.com    | password123 |
+| Admin   | secadmin@demo.com | admin123    |
+
+MD5 accounts work in both modes. Bcrypt accounts only work in secure mode.
 
 ---
 
@@ -160,6 +225,22 @@ define('SECURE_MODE', true);   // hardened
 ```
 
 Each feature file contains two functions - one vulnerable, one secure - and dispatches to the right one based on this flag. Change the value, refresh the browser, and the behavior flips instantly. No restart needed.
+
+## UI Toggles
+
+The app footer includes a pill toggle to switch between SECURE and VULNERABLE mode directly from the browser - no need to edit `config.php` manually. A separate button toggles the OWASP vulnerability hint cards on each page.
+
+Both toggles rewrite `config.php` on disk so the change persists across requests.
+
+## Config Options
+
+```php
+define('SECURE_MODE', false);       // false = vulnerable, true = hardened
+define('SHOW_SECURE_TOGGLE', true); // show/hide the mode toggle in the footer
+define('SHOW_VULN_HINT', true);     // show/hide OWASP vulnerability hint cards
+```
+
+Set `SHOW_SECURE_TOGGLE` and `SHOW_VULN_HINT` to `false` for a clean demo without UI chrome.
 
 ---
 
@@ -203,8 +284,9 @@ Each feature file contains two functions - one vulnerable, one secure - and disp
 
 ```
 medicare-portal/
-├── config.php               ← SECURE_MODE toggle + DB connection + shared helpers
-├── helpers.php              ← Layout rendering (sidebar, header, footer)
+├── config.php               ← SECURE_MODE + config toggles + DB connection + helpers
+├── helpers.php              ← Layout rendering + centralized vuln hint registry
+├── toggle_mode.php          ← Endpoint for UI mode/hint toggles
 ├── index.php                ← Redirects to login or dashboard
 │
 ├── auth/
@@ -224,23 +306,33 @@ medicare-portal/
 │   └── chat.php             ← A03 (stored XSS, doctor side)
 │
 ├── admin/
-│   ├── dashboard.php        ← System stats + user overview
+│   ├── dashboard.php        ← System stats + A05 (error leakage)
 │   ├── users.php            ← User management (delete)
 │   └── audit_log.php        ← A09 (logging failures)
 │
 ├── shared/
-│   ├── search.php           ← A03 (SQL injection)
+│   ├── search.php           ← A03 (SQL injection) + A02 (hash leakage)
 │   ├── upload.php           ← A08 (unrestricted file upload)
 │   └── insurance_fetch.php  ← A10 (SSRF)
 │
 ├── uploads/                 ← Uploaded files land here (writable)
 ├── assets/
-│   ├── style.css            ← Full custom CSS (~300 lines)
-│   └── main.js              ← Chat scroll + nav highlighting
+│   ├── style.css            ← Full custom CSS
+│   └── main.js              ← Chat scroll + nav highlighting + toggle handlers
 │
 ├── db/
-│   └── schema.sql           ← Full schema + seed data
+│   └── schema.sql           ← Full schema + seed data (MD5 + bcrypt accounts)
 │
+├── docs/
+│   ├── note.md              ← Step-by-step OWASP testing guide
+│   └── undo.md              ← Teardown instructions
+│
+├── docker/
+│   ├── apache-vhost.conf    ← Apache vhost for Docker
+│   └── entrypoint.sh        ← Starts MariaDB + imports schema + runs Apache
+│
+├── Dockerfile               ← Single-container build (Apache + PHP + MariaDB)
+├── .dockerignore
 ├── composer.json            ← A06 (vulnerable dependency)
 ├── .htaccess                ← A05 (misconfiguration surface)
 └── .gitignore
