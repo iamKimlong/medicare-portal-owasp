@@ -66,13 +66,13 @@ CREATE TABLE audit_log (
 );
 
 INSERT INTO users (name, email, password, role) VALUES
-('Alice Johnson', 'alice@demo.com', '482c811da5d5b4bc6d497ffa98491e38', 'patient'),
-('Bob Williams', 'bob@demo.com', '482c811da5d5b4bc6d497ffa98491e38', 'patient'),
-('Dr. Sarah Smith', 'drsmith@demo.com', '482c811da5d5b4bc6d497ffa98491e38', 'doctor'),
+('Nguyen Minh Anh', 'minhanh@demo.com', '482c811da5d5b4bc6d497ffa98491e38', 'patient'),
+('Chen Wei', 'chenwei@demo.com', '482c811da5d5b4bc6d497ffa98491e38', 'patient'),
+('Dr. Sato Haruka', 'haruka.sato@demo.com', '482c811da5d5b4bc6d497ffa98491e38', 'doctor'),
 ('Admin User', 'admin@demo.com', '0192023a7bbd73250516f069df18b500', 'admin'),
-('Carol Davis', 'carol@demo.com', '$2y$12$b2xw0OaGEDNX3BSf2gPsrOlg/KyI.f1m7F9SpazIUQi9UxoFQRPDy', 'patient'),
-('Dr. James Lee', 'drlee@demo.com', '$2y$12$b2xw0OaGEDNX3BSf2gPsrOlg/KyI.f1m7F9SpazIUQi9UxoFQRPDy', 'doctor'),
-('Admin Secure', 'secadmin@demo.com', '$2y$12$mKfL85ne9aYxrIFvMIAly.GQwSg/33EMjyeMrzDK9pL9jtGKYJyeO', 'admin');
+('Park Ji-hoon', 'jihoon.park@demo.com', '$2y$12$b2xw0OaGEDNX3BSf2gPsrOlg/KyI.f1m7F9SpazIUQi9UxoFQRPDy', 'patient'),
+('Dr. Li Xiaoming', 'xiaoming.li@demo.com', '$2y$12$b2xw0OaGEDNX3BSf2gPsrOlg/KyI.f1m7F9SpazIUQi9UxoFQRPDy', 'doctor'),
+('Admin Tanaka', 'admin.tanaka@demo.com', '$2y$12$mKfL85ne9aYxrIFvMIAly.GQwSg/33EMjyeMrzDK9pL9jtGKYJyeO', 'admin');
 
 INSERT INTO patients (user_id, dob, blood_type, allergies, notes) VALUES
 (1, '1990-03-15', 'A+', 'Peanuts', 'Regular checkup patient. History of seasonal allergies.'),
@@ -85,7 +85,7 @@ INSERT INTO appointments (patient_id, doctor_id, datetime, status, notes) VALUES
 (2, 3, '2026-04-05 11:00:00', 'scheduled', 'Blood sugar review');
 
 INSERT INTO messages (sender_id, receiver_id, body) VALUES
-(1, 3, 'Hi Dr. Smith, I have been experiencing headaches lately.'),
-(3, 1, 'Hello Alice, how long have these headaches been occurring?'),
+(1, 3, 'Hi Dr. Sato, I have been experiencing headaches lately.'),
+(3, 1, 'Hello Minh Anh, how long have these headaches been occurring?'),
 (1, 3, 'About two weeks now, mostly in the afternoon.'),
-(2, 3, 'Dr. Smith, my blood sugar reading was 140 this morning.');
+(2, 3, 'Dr. Sato, my blood sugar reading was 140 this morning.');
