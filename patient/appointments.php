@@ -134,4 +134,6 @@ renderHeader('Appointments');
     </div>
 </div>
 
+<?php renderVulnHints(['A04']); ?>
+
 <?php renderFooter(); ?>

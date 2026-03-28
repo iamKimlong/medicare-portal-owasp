@@ -86,10 +86,6 @@ renderHeader('Find a Doctor');
     <?php endif; ?>
 </div>
 
-<div class="card vuln-hint">
-    <h3 class="card-title">A03 - SQL Injection</h3>
-    <p>Try searching for: <code>' OR '1'='1</code> to dump all users.</p>
-    <p>Current mode: <strong><?= SECURE_MODE ? 'SECURE' : 'VULNERABLE' ?></strong></p>
-</div>
+<?php renderVulnHints(['A03-sqli', 'A02']); ?>
 
 <?php renderFooter(); ?>

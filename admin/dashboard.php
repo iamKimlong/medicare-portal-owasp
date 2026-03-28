@@ -69,4 +69,6 @@ renderHeader('Admin Dashboard');
     <p>Toggle <code>SECURE_MODE</code> in <code>config.php</code> to switch between vulnerable and hardened behaviors.</p>
 </div>
 
+<?php renderVulnHints(['A05']); ?>
+
 <?php renderFooter(); ?>

@@ -96,10 +96,6 @@ renderHeader('Messages');
     </div>
 </div>
 
-<div class="card vuln-hint">
-    <h3 class="card-title">A03 - XSS in Chat</h3>
-    <p>Try sending <code>&lt;img src=x onerror="alert(document.cookie)"&gt;</code> as a message.</p>
-    <p>Current mode: <strong><?= SECURE_MODE ? 'SECURE' : 'VULNERABLE' ?></strong></p>
-</div>
+<?php renderVulnHints(['A03-xss']); ?>
 
 <?php renderFooter(); ?>

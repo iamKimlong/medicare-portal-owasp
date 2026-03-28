@@ -97,4 +97,6 @@ renderHeader('Messages');
     </div>
 </div>
 
+<?php renderVulnHints(['A03-xss']); ?>
+
 <?php renderFooter(); ?>
