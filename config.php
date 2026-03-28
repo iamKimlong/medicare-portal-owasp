@@ -5,7 +5,7 @@ define('SHOW_VULN_HINT', true);
 
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_PASS', 'medicare_demo');
 define('DB_NAME', 'medicare');
 
 function getDB(): PDO {

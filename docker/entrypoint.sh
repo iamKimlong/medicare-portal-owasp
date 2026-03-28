@@ -3,7 +3,7 @@ set -e
 
 mysql_install_db --user=mysql --datadir=/var/lib/mysql > /dev/null 2>&1 || true
 
-mysqld_safe --skip-grant-tables &
+mariadbd-safe &
 
 echo "Waiting for MariaDB..."
 for i in $(seq 1 30); do
@@ -14,13 +14,14 @@ for i in $(seq 1 30); do
 done
 
 mysql -u root <<-EOSQL
+    FLUSH PRIVILEGES;
+    ALTER USER 'root'@'localhost' IDENTIFIED BY 'medicare_demo';
     CREATE DATABASE IF NOT EXISTS medicare;
-    CREATE USER IF NOT EXISTS 'root'@'localhost' IDENTIFIED BY 'awdonline';
-    GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;
     FLUSH PRIVILEGES;
 EOSQL
 
-mysql -u root medicare < /var/www/html/db/schema.sql
+mysql -u root -pmedicare_demo medicare < /var/www/html/db/schema.sql
 
 echo "MariaDB ready. Starting Apache..."
+sed -i "s/define('DB_HOST', 'localhost')/define('DB_HOST', '127.0.0.1')/" /var/www/html/config.php
 exec apache2-foreground

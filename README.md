@@ -1,23 +1,27 @@
+[Setup](#setup) · [Test Accounts](#test-accounts) · [SECURE_MODE](#how-secure_mode-works) · [OWASP Coverage](#owasp-top-10-coverage) · [Project Structure](#project-structure)
+
 # MediCare Portal
 
 **Intentionally vulnerable healthcare patient portal for demonstrating the OWASP Top 10 (2021).**
 
-Built for a Secure Programming final project. Every vulnerability has a hardened counterpart controlled by a single boolean in `config.php`. Flip it during a live demo to show the attack, then the fix, in real time.
+Every vulnerability has a hardened counterpart controlled by a single boolean in `config.php`. Flip it during a live demo to show the attack, then the fix, in real time.
+
+![image](https://github.com/user-attachments/assets/432dc62b-daab-4ecc-a9e7-402ed8b794ca)
 
 ---
 
-# Setup
+## ⚡ Setup
 
 Pick one:
 
 <details>
 <summary><strong>Option A: Docker (recommended)</strong></summary>
 
-## Prerequisites
+### Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) installed and running
 
-## 1. Build and run
+### 1. Build and run
 
 ```bash
 cd medicare-portal
@@ -25,32 +29,31 @@ docker build -t medicare-portal .
 docker run -d -p 80:80 --name medicare medicare-portal
 ```
 
-## 2. Open the app
+### 2. Open the app
 
 Go to `http://localhost` - you should see the login page.
 
-## 3. Stop / restart
+### 3. Stop / restart
 
 ```bash
 docker stop medicare
 docker start medicare
 ```
 
-## 4. Reset the database
+### 4. Reset the database
 
 ```bash
-docker exec medicare mysql -u root medicare < /var/www/html/db/schema.sql
+docker exec medicare bash -c "mysql -u root -pmedicare_demo medicare < /var/www/html/db/schema.sql"
 ```
 
-## 5. Tear down
+### 5. Teardown
 
 ```bash
 docker rm -f medicare
 docker rmi medicare-portal
 ```
 
-> [!note]
-> The Docker image bundles Apache, PHP, and MariaDB in a single container for simplicity.
+> **Note:** The Docker image bundles Apache, PHP, and MariaDB in a single container for simplicity.
 > This is fine for a demo - don't do this in production.
 
 </details>
@@ -58,16 +61,15 @@ docker rmi medicare-portal
 <details>
 <summary><strong>Option B: Manual setup (Arch Linux + Apache + MariaDB)</strong></summary>
 
-> [!note]
-> These commands are specific to Arch Linux. Adjust package names and service commands for your distribution.
+> **Note:** These commands are specific to Arch Linux. Adjust package names and service commands for your distribution.
 
-## 1. Install dependencies
+### 1. Install dependencies
 
 ```bash
 sudo pacman -S php apache mariadb php-apache
 ```
 
-## 2. Set up MariaDB
+### 2. Set up MariaDB
 
 ```bash
 sudo mariadb-install-db --user=mysql --basedir=/usr --datadir=/var/lib/mysql
@@ -83,11 +85,10 @@ mariadb -u root -p < db/schema.sql
 
 This creates the `medicare` database, all tables, and seeds the test accounts.
 
-> [!note]
-> If you get `ERROR 1698 (28000): Access denied for user 'root'@'localhost'`,
+> **Note:** If you get `ERROR 1698 (28000): Access denied for user 'root'@'localhost'`,
 > run `sudo mariadb-secure-installation` again and change the root password when prompted.
 
-## 3. Configure Apache
+### 3. Configure Apache
 
 All edits below go in `/etc/httpd/conf/httpd.conf`.
 
@@ -124,7 +125,7 @@ DocumentRoot "/path/to/medicare-portal"
 
 Replace `/path/to/medicare-portal` with the actual absolute path to the project.
 
-## 4. Configure PHP
+### 4. Configure PHP
 
 Edit `/etc/php/php.ini` and uncomment:
 ```ini
@@ -132,10 +133,9 @@ extension=pdo_mysql
 extension=mysqli
 ```
 
-## 5. Allow Apache to access your home directory
+### 5. Allow Apache to access your home directory
 
-> [!note]
-> Skip this step if your project is outside `/home` (e.g. in `/srv/http`).
+> **Note:** Skip this step if your project is outside `/home` (e.g. in `/srv/http`).
 
 Arch's systemd unit for Apache sets `ProtectHome=yes`, which blocks access to anything under `/home`. If your project lives there, override it:
 
@@ -153,21 +153,21 @@ Then reload the service config:
 sudo systemctl daemon-reload
 ```
 
-## 6. Set file permissions
+### 6. Set file permissions
 
 ```bash
 chmod -R 755 /path/to/medicare-portal
 chmod -R 777 /path/to/medicare-portal/uploads
 ```
 
-## 7. Update database credentials
+### 7. Update database credentials
 
 Edit `config.php`:
 ```php
 define('DB_PASS', 'your_password_here');  // whatever you set in step 2
 ```
 
-## 8. Start Apache
+### 8. Start Apache
 
 ```bash
 sudo systemctl restart httpd
@@ -175,7 +175,7 @@ sudo systemctl restart httpd
 
 Open `http://localhost` - you should see the login page.
 
-## Alternative: PHP built-in server (no Apache)
+### Alternative: PHP built-in server (no Apache)
 
 For quick testing without Apache config:
 ```bash
@@ -185,7 +185,7 @@ php -S localhost:8080
 
 This works for most features but `.htaccess` rules won't apply, and the webshell upload demo (A08) won't auto-execute PHP files in `/uploads/`.
 
-## Teardown
+### Teardown
 
 See [docs/undo.md](docs/undo.md) for full reversal steps.
 
@@ -193,30 +193,28 @@ See [docs/undo.md](docs/undo.md) for full reversal steps.
 
 ---
 
-# Test Accounts
+## Test Accounts
 
 Seed accounts with **MD5 hashes** (for A02 vulnerability demo):
-
-| Role    | Email             | Password    |
-|---------|-------------------|-------------|
-| Patient | alice@demo.com    | password123 |
-| Patient | bob@demo.com      | password123 |
-| Doctor  | drsmith@demo.com  | password123 |
-| Admin   | admin@demo.com    | admin123    |
+| Role    | Email                | Password    |
+|---------|-------------------   |-------------|
+| Patient | minhanh@demo.com     | password123 |
+| Patient | chenwei@demo.com     | password123 |
+| Doctor  | haruka.sato@demo.com | password123 |
+| Admin   | admin@demo.com       | admin123    |
 
 Seed accounts with **bcrypt hashes** (for secure mode login):
-
-| Role    | Email             | Password    |
-|---------|-------------------|-------------|
-| Patient | carol@demo.com    | password123 |
-| Doctor  | drlee@demo.com    | password123 |
-| Admin   | secadmin@demo.com | admin123    |
+| Role    | Email                 | Password    |
+|---------|-----------------------|-------------|
+| Patient | jihoon.park@demo.com  | password123 |
+| Doctor  | xiaoming.li@demo.com  | password123 |
+| Admin   | admin.tanaka@demo.com | admin123    |
 
 MD5 accounts work in both modes. Bcrypt accounts only work in secure mode.
 
 ---
 
-# How SECURE_MODE Works
+## ⚙️ How SECURE_MODE Works
 
 Every vulnerable code path checks a single constant in `config.php`:
 ```php
@@ -226,13 +224,13 @@ define('SECURE_MODE', true);   // hardened
 
 Each feature file contains two functions - one vulnerable, one secure - and dispatches to the right one based on this flag. Change the value, refresh the browser, and the behavior flips instantly. No restart needed.
 
-## UI Toggles
+### UI Toggles
 
 The app footer includes a pill toggle to switch between SECURE and VULNERABLE mode directly from the browser - no need to edit `config.php` manually. A separate button toggles the OWASP vulnerability hint cards on each page.
 
 Both toggles rewrite `config.php` on disk so the change persists across requests.
 
-## Config Options
+### Config Options
 
 ```php
 define('SECURE_MODE', false);       // false = vulnerable, true = hardened
@@ -244,7 +242,7 @@ Set `SHOW_SECURE_TOGGLE` and `SHOW_VULN_HINT` to `false` for a clean demo withou
 
 ---
 
-# OWASP Top 10 Coverage
+## 🚀 OWASP Top 10 Coverage
 
 | #   | Category                        | File                         | Vulnerable Behavior                     | Secure Fix                                   |
 |-----|---------------------------------|------------------------------|-----------------------------------------|----------------------------------------------|
@@ -280,7 +278,7 @@ Set `SHOW_SECURE_TOGGLE` and `SHOW_VULN_HINT` to `false` for a clean demo withou
 
 ---
 
-# Project Structure
+## Project Structure
 
 ```
 medicare-portal/
@@ -340,7 +338,7 @@ medicare-portal/
 
 ---
 
-# Disclaimer
+## ⚠️ Disclaimer
 
 This application is **intentionally vulnerable**. Run it only in isolated environments - your local machine, a VM, or a container. Never expose it to a network you do not fully control.
 

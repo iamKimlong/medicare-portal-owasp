@@ -2,7 +2,7 @@
 
 Step-by-step instructions for testing every OWASP vulnerability in the portal. Each section explains why the vulnerability exists, how to exploit it, and how the fix works at the code level.
 
-All tests assume you're running on Arch Linux with Apache + MariaDB as described in `README.md`, and that you're starting with `SECURE_MODE = false` in `config.php`.
+All tests assume you're running via Docker or Arch Linux as described in `README.md`, and that you're starting with `SECURE_MODE = false` in `config.php`.
 
 > [!tip]
 > You don't need to restart `httpd` after changing `config.php` or any PHP file. PHP reads them fresh on every request.
@@ -12,7 +12,7 @@ All tests assume you're running on Arch Linux with Apache + MariaDB as described
 # Before You Start
 
 1. Confirm the app is running at `http://localhost`.
-2. Confirm you can log in as `alice@demo.com` / `password123`.
+2. Confirm you can log in as `minhanh@demo.com` / `password123`.
 3. Use the **SECURE / VULNERABLE** pill toggle in the page footer to switch modes instantly, or edit `config.php` directly.
 4. Use Firefox. Chromium has built-in XSS filtering that may interfere with the A03 XSS test.
 
@@ -28,8 +28,8 @@ The page takes a `patient_id` parameter from the URL and queries the database wi
 
 ## Test (vulnerable)
 
-1. Log in as Alice (`alice@demo.com` / `password123`).
-2. Navigate to **My Records**. You see Alice's medical record.
+1. Log in as Minh Anh (`minhanh@demo.com` / `password123`).
+2. Navigate to **My Records**. You see Minh Anh's medical record.
 3. Change the URL to: `http://localhost/patient/records.php?patient_id=2`
 4. You now see Bob's full medical record - DOB, blood type, allergies, clinical notes - without any authorization check.
 
@@ -85,7 +85,7 @@ Passwords are hashed with MD5, which is a fast, unsalted hash originally designe
 4. The new password starts with `$2y$` - a bcrypt hash that is salted and computationally expensive to crack.
 
 > [!note]
-> The original seed accounts (alice, bob, drsmith, admin) have MD5 hashes. Additional seed accounts (carol, drlee, secadmin) have bcrypt hashes. In secure mode, `verifyPassword()` detects both formats automatically - MD5 accounts work in both modes, bcrypt accounts only work in secure mode.
+> The original seed accounts (minhanh, chenwei, haruka.sato, admin) have MD5 hashes. Additional seed accounts (jihoon.park, xiaoming.li, admin.tanaka) have bcrypt hashes. In secure mode, `verifyPassword()` detects both formats automatically - MD5 accounts work in both modes, bcrypt accounts only work in secure mode.
 
 ## How the fix works
 
@@ -150,13 +150,13 @@ Message content from the database is rendered directly into the HTML with `<?= $
 
 ## Test (vulnerable)
 
-1. Log in as Alice (`alice@demo.com`).
+1. Log in as Minh Anh (`minhanh@demo.com`).
 2. Go to **Messages**, select Dr. Smith, and send:
    ```
    <img src=x onerror="alert(document.cookie)">
    ```
 3. The page reloads and a JavaScript alert fires showing your session cookie.
-4. Log in as Dr. Smith (`drsmith@demo.com` / `password123`), go to Messages, click Alice - the alert fires again. This is **stored XSS**: the payload persists in the database and hits every user who views the conversation.
+4. Log in as Dr. Sato (`haruka.sato@demo.com` / `password123`), go to Messages, click Minh Anh - the alert fires again.
 
 Other payloads to try:
 ```
@@ -391,7 +391,9 @@ In vulnerable mode, `writeAuditLog()` returns immediately without writing anythi
 ## Test (secure)
 
 1. Set `SECURE_MODE = true`.
-2. Reset the database (`mariadb -u root -p < db/schema.sql`) to clear any stale data.
+2. Reset the database.
+    - Manual: `mariadb -u root -p < db/schema.sql`
+    - Docker: `docker exec medicare bash -c "mysql -u root -pmedicare_demo medicare < /var/www/html/db/schema.sql"`.
 3. Log in as Admin and repeat the same actions.
 4. Go to the Audit Log - every action is recorded with user, action description, IP address, and timestamp.
 
@@ -466,7 +468,10 @@ For rapid demo iterations:
 vim /path/to/medicare-portal/config.php
 
 # Reset the database (wipes all data, re-seeds accounts)
+# Manual:
 mariadb -u root -p < /path/to/medicare-portal/db/schema.sql
+# Docker:
+docker exec medicare bash -c "mysql -u root -pmedicare_demo medicare < /var/www/html/db/schema.sql"
 ```
 
 ---
