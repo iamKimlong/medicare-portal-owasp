@@ -45,7 +45,7 @@ renderHeader('Audit Log');
                         <td><?= esc($log['user_name'] ?? 'Unknown') ?></td>
                         <td><?= esc($log['action']) ?></td>
                         <td><?= esc($log['ip'] ?? '') ?></td>
-                        <td><?= fmtDate($u['created_at']) ?></td>
+                        <td><?= fmtDate($log['timestamp']) ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>
@@ -53,10 +53,6 @@ renderHeader('Audit Log');
     <?php endif; ?>
 </div>
 
-<div class="card vuln-hint">
-    <h3 class="card-title">A09 - Logging & Monitoring Failures</h3>
-    <p>In VULNERABLE mode, sensitive actions like logins, record access, and uploads are <strong>not logged</strong>.</p>
-    <p>Current mode: <strong><?= SECURE_MODE ? 'SECURE' : 'VULNERABLE' ?></strong></p>
-</div>
+<?php renderVulnHints(['A09']); ?>
 
 <?php renderFooter(); ?>
