@@ -38,6 +38,9 @@ Go to `http://localhost` - you should see the login page.
 ```bash
 docker stop medicare
 docker start medicare
+
+# or
+docker restart medicare
 ```
 
 ### 4. Reset the database
